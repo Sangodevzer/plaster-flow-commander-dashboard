@@ -7,11 +7,13 @@ import CostCalculator from "@/components/CostCalculator";
 import ResourceAvailability from "@/components/ResourceAvailability";
 import Simulator from "@/components/Simulator";
 import AlertBanner from "@/components/AlertBanner";
+import ProductionScheduler from "@/components/ProductionScheduler";
 
 const Index = () => {
   return (
     <Layout>
       <ProductionOverview />
+      <ProductionScheduler />
       <ProductionScenarios />
       <DowntimeRisk />
       <CostCalculator />
