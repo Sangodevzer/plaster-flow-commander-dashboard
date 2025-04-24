@@ -71,6 +71,20 @@ export default {
 					green: '#4CAF50',
 					gray: '#78909C',
 					lightGray: '#ECEFF1',
+				},
+				// Saint-Gobain 2025 color palette
+				'saint-gobain': {
+					blue: '#0064A8',       // Primary blue
+					darkBlue: '#003E67',   // Dark blue for hover states
+					lightBlue: '#E0F2FF',  // Light blue for backgrounds
+					green: '#00A651',      // Success/positive actions
+					red: '#E53935',        // Error/alert states
+					amber: '#FFC107',      // Warning states
+					gray: '#6B7280',       // Standard text
+					darkGray: '#374151',   // Headings
+					lightGray: '#F3F4F6',  // Background
+					white: '#FFFFFF',      // White elements
+					silver: '#E5E7EB',     // Borders
 				}
 			},
 			borderRadius: {
