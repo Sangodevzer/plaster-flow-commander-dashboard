@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import ProductionChart from "./ProductionChart";
 import EnhancedSimulator from "./EnhancedSimulator";
+import Statistics from "./Statistics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { BarChart, Calculator, Bell } from "lucide-react";
+import { BarChart, Activity, Calculator, Bell } from "lucide-react";
 
 export default function DashboardV2() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -14,12 +16,14 @@ export default function DashboardV2() {
     { id: 3, message: "3 commandes urgentes de Plâtre A à traiter", read: false }
   ]);
   
+  // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Notification Alert */}
       {notifications.some(n => !n.read) && (
         <Alert className="bg-amber-50 border-amber-200">
           <Bell className="h-4 w-4 text-amber-500 mr-2" />
@@ -34,13 +38,17 @@ export default function DashboardV2() {
         </Alert>
       )}
       
+      {/* Main Tabs */}
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" /> Aperçu
           </TabsTrigger>
           <TabsTrigger value="simulator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" /> Simulateur
+          </TabsTrigger>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Statistiques
           </TabsTrigger>
         </TabsList>
         
@@ -51,6 +59,10 @@ export default function DashboardV2() {
           
           <TabsContent value="simulator">
             <EnhancedSimulator />
+          </TabsContent>
+          
+          <TabsContent value="statistics">
+            <Statistics />
           </TabsContent>
         </div>
       </Tabs>
