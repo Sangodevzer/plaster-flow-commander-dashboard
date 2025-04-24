@@ -1,6 +1,4 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
@@ -27,12 +25,13 @@ export default function VersionToggle({ currentVersion, onToggle }: VersionToggl
   };
   
   return (
-    <div className="flex items-center space-x-4 rounded-lg border border-gray-200 p-2 px-3 bg-white">
+    <div className="flex items-center space-x-4 rounded-lg border border-gray-200 p-2 px-3 bg-white shadow-sm transition-all hover:shadow-md">
       <div className="flex items-center space-x-2">
         <Switch 
           id="version-toggle" 
           checked={currentVersion === "v2"}
           onCheckedChange={handleToggle}
+          className={currentVersion === "v2" ? "bg-saint-gobain-blue" : ""}
         />
         <Label htmlFor="version-toggle" className="flex items-center space-x-2">
           <span className={currentVersion === "v1" ? "font-bold text-factory-blue" : "text-gray-500"}>V1</span>
