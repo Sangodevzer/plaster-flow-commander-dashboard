@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { LayoutDashboard, BarChart2, AlertTriangle, Calculator, Database, FlaskRound, Bell, Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -14,12 +14,6 @@ type NavItem = {
 export default function Sidebar() {
   const [navItems, setNavItems] = useState<NavItem[]>([
     { name: "Tableau de Bord", icon: LayoutDashboard, href: "#overview", current: true },
-    { name: "Scénarios de Production", icon: BarChart2, href: "#scenarios", current: false },
-    { name: "Évaluation des Risques", icon: AlertTriangle, href: "#risks", current: false },
-    { name: "Calculateur de Coûts", icon: Calculator, href: "#costs", current: false },
-    { name: "Disponibilité des Ressources", icon: Database, href: "#resources", current: false },
-    { name: "Simulateur", icon: FlaskRound, href: "#simulator", current: false },
-    { name: "Alertes", icon: Bell, href: "#alerts", current: false },
   ]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
