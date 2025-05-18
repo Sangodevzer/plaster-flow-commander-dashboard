@@ -20,7 +20,7 @@ const products = [
   { id: "plaster-d", name: "Plâtre D", baseTime: 6, temp: 200, cost: 15.90 }
 ];
 
-export default function EnhancedSimulator() {
+export default function EnhancedSimulator({ onFinalizeProduction }) {
   // State for simulation parameters
   const [selectedTab, setSelectedTab] = useState("setup");
   const [selectedProducts, setSelectedProducts] = useState([
@@ -115,6 +115,13 @@ export default function EnhancedSimulator() {
     setScenarios([]);
     setRecommendedScenario(null);
     setSelectedTab("setup");
+  };
+
+  // Handle finalize production
+  const handleFinalize = () => {
+    if (onFinalizeProduction && typeof onFinalizeProduction === 'function') {
+      onFinalizeProduction();
+    }
   };
   
   // Get comparison chart data
@@ -509,7 +516,10 @@ export default function EnhancedSimulator() {
               <Button variant="outline" onClick={resetSimulation}>
                 Modifier les Paramètres
               </Button>
-              <Button className="bg-saint-gobain-blue hover:bg-blue-700">
+              <Button 
+                className="bg-saint-gobain-blue hover:bg-blue-700"
+                onClick={handleFinalize}
+              >
                 Finaliser et Déclarer la Production
               </Button>
             </>

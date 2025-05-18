@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BarChart, Activity, Calculator, Bell } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardV2() {
   const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState([
     { id: 1, message: "Pénurie possible de gypse cette semaine", read: false },
     { id: 2, message: "Maintenance du Four 2 prévue demain", read: false },
@@ -19,6 +21,14 @@ export default function DashboardV2() {
   // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
+
+  // Function to show success toast for production declaration
+  const handleProductionDeclaration = () => {
+    toast({
+      title: "Production déclarée",
+      description: "La déclaration de production a été effectuée avec succès",
+    });
   };
 
   return (
@@ -39,7 +49,7 @@ export default function DashboardV2() {
       )}
       
       {/* Main Tabs */}
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" /> Aperçu
@@ -54,11 +64,11 @@ export default function DashboardV2() {
         
         <div className="mt-6">
           <TabsContent value="overview">
-            <ProductionChart />
+            <ProductionChart setActiveTab={setActiveTab} />
           </TabsContent>
           
           <TabsContent value="simulator">
-            <EnhancedSimulator />
+            <EnhancedSimulator onFinalizeProduction={handleProductionDeclaration} />
           </TabsContent>
           
           <TabsContent value="statistics">

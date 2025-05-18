@@ -45,7 +45,7 @@ const initialData = [
   }
 ];
 
-export default function ProductionChart() {
+export default function ProductionChart({ setActiveTab }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [timeRange, setTimeRange] = useState("semaine");
   const [chartData, setChartData] = useState(initialData);
@@ -54,6 +54,11 @@ export default function ProductionChart() {
   const filteredData = chartData.filter(
     item => item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Navigate to simulator tab
+  const navigateToSimulator = () => {
+    setActiveTab("simulator");
+  };
 
   return (
     <Card className="w-full">
@@ -136,6 +141,7 @@ export default function ProductionChart() {
         <div className="flex justify-end">
           <Button 
             className="bg-saint-gobain-blue hover:bg-blue-700"
+            onClick={navigateToSimulator}
           >
             Accéder au Simulateur
           </Button>
