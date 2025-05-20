@@ -5,12 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FlaskConical, Clock, Coins, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FlaskConical, Clock, Coins, AlertTriangle, ArrowRight } from "lucide-react";
 
 // Mock data for products
 const products = [
@@ -20,32 +19,65 @@ const products = [
   { id: "plaster-d", name: "Plâtre D", baseTime: 6, temp: 200, cost: 15.90 }
 ];
 
+// Scenario definitions
+const scenarios = [
+  { 
+    id: "economique", 
+    name: "Économique", 
+    description: "Optimise les coûts de production mais prend plus de temps",
+    timeMultiplier: 1.4,
+    costMultiplier: 0.85,
+    riskRate: 10
+  },
+  { 
+    id: "optimal", 
+    name: "Optimal", 
+    description: "Équilibre entre temps et coût de production",
+    timeMultiplier: 1.0,
+    costMultiplier: 1.0,
+    riskRate: 15
+  },
+  { 
+    id: "rapide", 
+    name: "Rapide", 
+    description: "Production accélérée mais à coût plus élevé",
+    timeMultiplier: 0.7,
+    costMultiplier: 1.3,
+    riskRate: 25
+  }
+];
+
 export default function EnhancedSimulator({ onFinalizeProduction }) {
   // State for simulation parameters
   const [selectedTab, setSelectedTab] = useState("setup");
   const [selectedProducts, setSelectedProducts] = useState([
     { id: "plaster-a", name: "Plâtre A", quantity: 1000, priority: 1 }
   ]);
-  const [absenceFactor, setAbsenceFactor] = useState(10); // percentage
-  const [machineFactor, setMachineFactor] = useState(15); // percentage
-  const [materialShortage, setMaterialShortage] = useState(5); // percentage
+  
+  // State for selected scenarios
+  const [selectedScenarios, setSelectedScenarios] = useState(["optimal"]);
   
   // State for simulation results
   const [simulationRun, setSimulationRun] = useState(false);
-  const [scenarios, setScenarios] = useState([]);
-  const [recommendedScenario, setRecommendedScenario] = useState(null);
+  const [simulationResults, setSimulationResults] = useState([]);
   
   // Add a product to the simulation
   const addProduct = () => {
     if (selectedProducts.length < 4) {
-      const newProduct = {
-        id: `plaster-${String.fromCharCode(97 + selectedProducts.length)}`, 
-        name: `Plâtre ${String.fromCharCode(65 + selectedProducts.length)}`,
-        quantity: 500,
-        priority: selectedProducts.length + 1
-      };
+      // Find the first product not already selected
+      const usedIds = selectedProducts.map(p => p.id);
+      const availableProduct = products.find(p => !usedIds.includes(p.id));
       
-      setSelectedProducts([...selectedProducts, newProduct]);
+      if (availableProduct) {
+        const newProduct = {
+          id: availableProduct.id,
+          name: availableProduct.name,
+          quantity: 500,
+          priority: selectedProducts.length + 1
+        };
+        
+        setSelectedProducts([...selectedProducts, newProduct]);
+      }
     }
   };
   
@@ -72,39 +104,91 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
     };
     setSelectedProducts(updatedProducts);
   };
+
+  // Update product selection
+  const updateProduct = (index, productId) => {
+    const selectedProduct = products.find(p => p.id === productId);
+    if (selectedProduct) {
+      const updatedProducts = [...selectedProducts];
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        id: selectedProduct.id,
+        name: selectedProduct.name
+      };
+      setSelectedProducts(updatedProducts);
+    }
+  };
+  
+  // Toggle scenario selection
+  const toggleScenario = (scenarioId) => {
+    if (selectedScenarios.includes(scenarioId)) {
+      // If already selected, remove it (unless it's the last one)
+      if (selectedScenarios.length > 1) {
+        setSelectedScenarios(selectedScenarios.filter(id => id !== scenarioId));
+      }
+    } else {
+      // If not selected, add it
+      setSelectedScenarios([...selectedScenarios, scenarioId]);
+    }
+  };
   
   // Run simulation function
   const runSimulation = () => {
-    // Generate mock scenarios based on inputs
-    const mockScenarios = [
-      {
-        id: "scenario-1",
-        name: "Scénario Optimal",
-        time: Math.round(10 + (absenceFactor/100 * 2) + (machineFactor/100 * 3)),
-        cost: Math.round(120 + (materialShortage/100 * 30)),
-        risk: Math.round(15 + (machineFactor/100 * 20)),
-        recommended: true
-      },
-      {
-        id: "scenario-2",
-        name: "Scénario Rapide",
-        time: Math.round(8 + (absenceFactor/100 * 1.5) + (machineFactor/100 * 2)),
-        cost: Math.round(150 + (materialShortage/100 * 40)),
-        risk: Math.round(25 + (machineFactor/100 * 30)),
-        recommended: false
-      },
-      {
-        id: "scenario-3",
-        name: "Scénario Économique",
-        time: Math.round(14 + (absenceFactor/100 * 3) + (machineFactor/100 * 4)),
-        cost: Math.round(100 + (materialShortage/100 * 20)),
-        risk: Math.round(10 + (machineFactor/100 * 15)),
-        recommended: false
-      }
-    ];
+    // Generate results for each selected scenario
+    const results = selectedScenarios.map(scenarioId => {
+      const scenario = scenarios.find(s => s.id === scenarioId);
+      
+      // Calculate production order and details
+      const productionOrder = selectedProducts.map(product => {
+        const productInfo = products.find(p => p.id === product.id);
+        
+        const baseTime = productInfo?.baseTime || 4;
+        const baseCost = productInfo?.cost || 10;
+        
+        const productionTime = Math.round(baseTime * scenario.timeMultiplier * 10) / 10;
+        const productionCost = Math.round(baseCost * scenario.costMultiplier * 100) / 100;
+        const totalCost = Math.round(productionCost * product.quantity / 100);
+        
+        // Calculate machine stop impact
+        const hasStopRisk = Math.random() < (scenario.riskRate / 100);
+        const stopImpact = hasStopRisk ? {
+          additionalTime: Math.round(productionTime * 0.3 * 10) / 10, // 30% more time
+          additionalCost: Math.round(totalCost * 0.2), // 20% more cost
+          reason: ["Panne four", "Pénurie matière", "Maintenance urgente"][Math.floor(Math.random() * 3)]
+        } : null;
+        
+        return {
+          ...product,
+          productionTime,
+          productionCost,
+          totalCost,
+          stopRisk: scenario.riskRate,
+          stopImpact,
+          totalTimeWithStop: stopImpact ? productionTime + stopImpact.additionalTime : productionTime,
+          totalCostWithStop: stopImpact ? totalCost + stopImpact.additionalCost : totalCost
+        };
+      });
+      
+      // Sort by priority
+      productionOrder.sort((a, b) => a.priority - b.priority);
+      
+      // Calculate totals
+      const totalTime = productionOrder.reduce((sum, p) => sum + p.totalTimeWithStop, 0);
+      const totalCost = productionOrder.reduce((sum, p) => sum + p.totalCostWithStop, 0);
+      const hasAnyStop = productionOrder.some(p => p.stopImpact !== null);
+      
+      return {
+        scenarioId,
+        scenarioName: scenario.name,
+        productionOrder,
+        totalTime,
+        totalCost,
+        hasAnyStop,
+        stopRiskRate: scenario.riskRate
+      };
+    });
     
-    setScenarios(mockScenarios);
-    setRecommendedScenario(mockScenarios.find(s => s.recommended));
+    setSimulationResults(results);
     setSimulationRun(true);
     setSelectedTab("results");
   };
@@ -112,8 +196,7 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
   // Reset simulation
   const resetSimulation = () => {
     setSimulationRun(false);
-    setScenarios([]);
-    setRecommendedScenario(null);
+    setSimulationResults([]);
     setSelectedTab("setup");
   };
 
@@ -124,92 +207,55 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
     }
   };
   
-  // Get comparison chart data
-  const getComparisonChartData = () => {
-    return scenarios.map(scenario => ({
-      name: scenario.name.split(" ")[1],
-      temps: scenario.time,
-      cout: scenario.cost,
-      risque: scenario.risk
-    }));
-  };
-  
-  // Get cost breakdown data
-  const getCostBreakdownData = () => {
-    if (!recommendedScenario) return [];
-    
-    return [
-      { name: "Main d'œuvre", value: Math.round(recommendedScenario.cost * 0.4) },
-      { name: "Matières", value: Math.round(recommendedScenario.cost * 0.35) },
-      { name: "Énergie", value: Math.round(recommendedScenario.cost * 0.15) },
-      { name: "Maintenance", value: Math.round(recommendedScenario.cost * 0.1) }
-    ];
-  };
-  
-  // Get time series data
-  const getTimeSeriesData = () => {
-    if (!recommendedScenario) return [];
-    
-    const baseTime = recommendedScenario.time;
-    return [
-      { hour: "1h", production: Math.round(baseTime * 0.1) },
-      { hour: "2h", production: Math.round(baseTime * 0.25) },
-      { hour: "3h", production: Math.round(baseTime * 0.4) },
-      { hour: "4h", production: Math.round(baseTime * 0.55) },
-      { hour: "5h", production: Math.round(baseTime * 0.7) },
-      { hour: "6h", production: Math.round(baseTime * 0.85) },
-      { hour: "7h", production: Math.round(baseTime * 1) }
-    ];
-  };
-
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center text-saint-gobain-blue">
-          <FlaskConical className="h-5 w-5 mr-2" />
+    <Card className="w-full bg-gradient-to-br from-white to-gray-50 border-0 shadow-lg rounded-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+        <CardTitle className="flex items-center text-indigo-900">
+          <FlaskConical className="h-5 w-5 mr-2 text-indigo-600" />
           Simulateur de Production Avancé
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-indigo-700">
           Testez différentes configurations pour optimiser votre production
         </CardDescription>
       </CardHeader>
       
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <div className="px-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="setup">Configuration</TabsTrigger>
-            <TabsTrigger value="results" disabled={!simulationRun}>Résultats</TabsTrigger>
-            <TabsTrigger value="costs" disabled={!simulationRun}>Coûts</TabsTrigger>
+        <div className="px-6 pt-4">
+          <TabsList className="grid w-full grid-cols-2 bg-blue-50 p-1 rounded-xl">
+            <TabsTrigger 
+              value="setup" 
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm"
+            >
+              Configuration
+            </TabsTrigger>
+            <TabsTrigger 
+              value="results" 
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm"
+              disabled={!simulationRun}
+            >
+              Résultats
+            </TabsTrigger>
           </TabsList>
         </div>
         
         <CardContent className="p-6">
           {/* Setup Tab */}
-          <TabsContent value="setup" className="space-y-6">
+          <TabsContent value="setup" className="space-y-6 mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Products Selection */}
-              <div className="space-y-6">
+              <div className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 space-y-5">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Produits à Simuler</h3>
+                  <h3 className="text-lg font-medium text-indigo-900">Produits à Simuler</h3>
                   
                   {selectedProducts.map((product, index) => (
-                    <div key={index} className="flex space-x-2 items-end">
+                    <div key={index} className="flex space-x-2 items-end bg-gray-50 p-3 rounded-lg">
                       <div className="flex-1 space-y-2">
-                        <Label>Produit {index + 1}</Label>
+                        <Label className="text-gray-700">Produit {index + 1}</Label>
                         <Select 
                           value={product.id} 
-                          onValueChange={(value) => {
-                            const updatedProducts = [...selectedProducts];
-                            const selectedProduct = products.find(p => p.id === value);
-                            updatedProducts[index] = {
-                              ...updatedProducts[index],
-                              id: selectedProduct.id,
-                              name: selectedProduct.name
-                            };
-                            setSelectedProducts(updatedProducts);
-                          }}
+                          onValueChange={(value) => updateProduct(index, value)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-white border-gray-200">
                             <SelectValue placeholder="Sélectionner un produit" />
                           </SelectTrigger>
                           <SelectContent>
@@ -223,20 +269,21 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
                       </div>
                       
                       <div className="flex-1 space-y-2">
-                        <Label>Quantité (kg)</Label>
+                        <Label className="text-gray-700">Quantité (kg)</Label>
                         <Input 
                           type="number" 
                           value={product.quantity} 
                           onChange={(e) => updateQuantity(index, e.target.value)}
                           min={100}
                           step={100}
+                          className="bg-white border-gray-200"
                         />
                       </div>
                       
                       <Button 
                         variant="outline" 
                         size="icon"
-                        className="mb-0.5"
+                        className="mb-0.5 border-gray-300 text-gray-700 hover:bg-gray-100"
                         onClick={() => removeProduct(index)}
                         disabled={selectedProducts.length === 1}
                       >
@@ -247,7 +294,7 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
                   
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full mt-3 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     onClick={addProduct}
                     disabled={selectedProducts.length >= 4}
                   >
@@ -256,67 +303,61 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
                 </div>
               </div>
               
-              {/* Risk Factors */}
-              <div className="space-y-5">
-                <h3 className="text-lg font-medium">Facteurs de Risque</h3>
+              {/* Scenario Selection */}
+              <div className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 space-y-5">
+                <h3 className="text-lg font-medium text-indigo-900">Choix des Scénarios</h3>
+                <p className="text-sm text-gray-600">Sélectionnez un ou plusieurs scénarios pour comparer leurs effets sur la production</p>
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="absence-factor">Taux d'Absence</Label>
-                    <span className="text-sm font-medium">{absenceFactor}%</span>
-                  </div>
-                  <Slider 
-                    id="absence-factor"
-                    value={[absenceFactor]}
-                    onValueChange={(value) => setAbsenceFactor(value[0])}
-                    min={0}
-                    max={30}
-                    step={1}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Impact des absences sur le temps de production
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="machine-factor">Risque de Panne Machine</Label>
-                    <span className="text-sm font-medium">{machineFactor}%</span>
-                  </div>
-                  <Slider 
-                    id="machine-factor"
-                    value={[machineFactor]}
-                    onValueChange={(value) => setMachineFactor(value[0])}
-                    min={0}
-                    max={50}
-                    step={1}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Probabilité d'arrêt machine et impact sur le temps de production
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="material-shortage">Pénurie de Matières</Label>
-                    <span className="text-sm font-medium">{materialShortage}%</span>
-                  </div>
-                  <Slider 
-                    id="material-shortage"
-                    value={[materialShortage]}
-                    onValueChange={(value) => setMaterialShortage(value[0])}
-                    min={0}
-                    max={40}
-                    step={1}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Impact sur les coûts de production
-                  </p>
+                <div className="space-y-4 mt-4">
+                  {scenarios.map((scenario) => (
+                    <div 
+                      key={scenario.id} 
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                        selectedScenarios.includes(scenario.id) 
+                          ? 'bg-indigo-50 border border-indigo-200' 
+                          : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => toggleScenario(scenario.id)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex h-6 items-center">
+                          <RadioGroup value={selectedScenarios.includes(scenario.id) ? "checked" : ""}>
+                            <RadioGroupItem value="checked" id={`scenario-${scenario.id}`} />
+                          </RadioGroup>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label 
+                            htmlFor={`scenario-${scenario.id}`}
+                            className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {scenario.name}
+                          </label>
+                          <p className="text-sm text-gray-500">
+                            {scenario.description}
+                          </p>
+                          <div className="flex space-x-3 text-xs text-gray-600 mt-2">
+                            <span className="flex items-center">
+                              <Clock className="h-3.5 w-3.5 mr-1 text-blue-600" />
+                              {scenario.timeMultiplier < 1 ? "Plus rapide" : "Plus lent"}
+                            </span>
+                            <span className="flex items-center">
+                              <Coins className="h-3.5 w-3.5 mr-1 text-amber-600" />
+                              {scenario.costMultiplier < 1 ? "Moins coûteux" : "Plus coûteux"}
+                            </span>
+                            <span className="flex items-center">
+                              <AlertTriangle className="h-3.5 w-3.5 mr-1 text-red-600" />
+                              Risque d'arrêt: {scenario.riskRate}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 
                 <div className="pt-4">
                   <Button 
-                    className="w-full bg-saint-gobain-blue hover:bg-blue-700"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-md"
                     onClick={runSimulation}
                   >
                     Lancer la Simulation
@@ -327,181 +368,303 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
           </TabsContent>
           
           {/* Results Tab */}
-          <TabsContent value="results" className="space-y-6">
+          <TabsContent value="results" className="space-y-6 mt-2">
             {simulationRun && (
               <>
-                <Alert className="bg-green-50 border-green-200">
+                <Alert className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-sm">
                   <AlertDescription>
-                    <div className="font-medium">Simulation terminée avec succès</div>
-                    <div className="text-sm text-gray-600">
-                      {selectedProducts.length} produits, {selectedProducts.reduce((sum, p) => sum + p.quantity, 0)} kg total
+                    <div className="font-medium text-green-800">Simulation terminée avec succès</div>
+                    <div className="text-sm text-green-700">
+                      {selectedProducts.length} produits, {selectedProducts.reduce((sum, p) => sum + p.quantity, 0)} kg au total
                     </div>
                   </AlertDescription>
                 </Alert>
                 
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Scénario Recommandé</h3>
-                    {recommendedScenario && (
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="font-bold text-xl">{recommendedScenario.name}</div>
-                          <Badge className="bg-green-500">Recommandé</Badge>
-                        </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  {/* Production Order */}
+                  <div className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 space-y-5">
+                    <h3 className="text-lg font-medium text-indigo-900">Ordre de Production</h3>
+                    
+                    {/* Scenario tabs if multiple scenarios selected */}
+                    {simulationResults.length > 1 && (
+                      <Tabs defaultValue={simulationResults[0].scenarioId} className="w-full">
+                        <TabsList className="w-full bg-gray-100 p-1 rounded-lg">
+                          {simulationResults.map((result) => (
+                            <TabsTrigger 
+                              key={result.scenarioId} 
+                              value={result.scenarioId}
+                              className="flex-1 data-[state=active]:bg-white rounded-md"
+                            >
+                              {result.scenarioName}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
                         
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="bg-white p-3 rounded-md text-center">
-                            <Clock className="h-5 w-5 mx-auto text-blue-600" />
-                            <div className="mt-1 text-sm font-medium">Temps</div>
-                            <div className="text-xl font-bold">{recommendedScenario.time}h</div>
+                        {simulationResults.map((result) => (
+                          <TabsContent key={result.scenarioId} value={result.scenarioId} className="mt-4 space-y-4">
+                            {result.productionOrder.map((product, index) => (
+                              <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center space-x-2">
+                                    <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+                                      {index + 1}
+                                    </Badge>
+                                    <span className="font-medium">{product.name}</span>
+                                  </div>
+                                  <span className="text-gray-600">{product.quantity} kg</span>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 mt-3">
+                                  <div>
+                                    <div className="text-sm text-gray-500">Temps de production</div>
+                                    <div className="font-medium flex items-center">
+                                      <Clock className="h-4 w-4 mr-1 text-blue-600" />
+                                      {product.productionTime}h
+                                      {product.stopImpact && (
+                                        <span className="ml-1 text-red-600">
+                                          + {product.stopImpact.additionalTime}h
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-500">Coût unitaire</div>
+                                    <div className="font-medium flex items-center">
+                                      <Coins className="h-4 w-4 mr-1 text-amber-600" />
+                                      {product.productionCost}€ /100kg
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {product.stopImpact && (
+                                  <Alert className="mt-3 bg-red-50 border-red-200 py-2 px-3">
+                                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                                    <AlertDescription className="text-sm text-red-700 ml-2">
+                                      Risque d'arrêt machine: {product.stopImpact.reason}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                              </div>
+                            ))}
+                            
+                            <div className="flex justify-between items-center bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-4">
+                              <div>
+                                <div className="text-indigo-900 font-medium">Total</div>
+                                <div className="text-sm text-indigo-700">
+                                  Risque d'arrêt machine: {result.stopRiskRate}%
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-medium flex items-center justify-end">
+                                  <Clock className="h-4 w-4 mr-1 text-blue-600" />
+                                  {result.totalTime}h
+                                </div>
+                                <div className="font-medium flex items-center justify-end">
+                                  <Coins className="h-4 w-4 mr-1 text-amber-600" />
+                                  {result.totalCost}€
+                                </div>
+                              </div>
+                            </div>
+                          </TabsContent>
+                        ))}
+                      </Tabs>
+                    )}
+                    
+                    {/* Direct display if only one scenario selected */}
+                    {simulationResults.length === 1 && (
+                      <div className="space-y-4">
+                        {simulationResults[0].productionOrder.map((product, index) => (
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
+                                <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+                                  {index + 1}
+                                </Badge>
+                                <span className="font-medium">{product.name}</span>
+                              </div>
+                              <span className="text-gray-600">{product.quantity} kg</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mt-3">
+                              <div>
+                                <div className="text-sm text-gray-500">Temps de production</div>
+                                <div className="font-medium flex items-center">
+                                  <Clock className="h-4 w-4 mr-1 text-blue-600" />
+                                  {product.productionTime}h
+                                  {product.stopImpact && (
+                                    <span className="ml-1 text-red-600">
+                                      + {product.stopImpact.additionalTime}h
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-gray-500">Coût unitaire</div>
+                                <div className="font-medium flex items-center">
+                                  <Coins className="h-4 w-4 mr-1 text-amber-600" />
+                                  {product.productionCost}€ /100kg
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {product.stopImpact && (
+                              <Alert className="mt-3 bg-red-50 border-red-200 py-2 px-3">
+                                <AlertTriangle className="h-4 w-4 text-red-600" />
+                                <AlertDescription className="text-sm text-red-700 ml-2">
+                                  Risque d'arrêt machine: {product.stopImpact.reason}
+                                </AlertDescription>
+                              </Alert>
+                            )}
                           </div>
-                          <div className="bg-white p-3 rounded-md text-center">
-                            <Coins className="h-5 w-5 mx-auto text-amber-600" />
-                            <div className="mt-1 text-sm font-medium">Coût</div>
-                            <div className="text-xl font-bold">{recommendedScenario.cost}€</div>
+                        ))}
+                        
+                        <div className="flex justify-between items-center bg-indigo-50 p-4 rounded-lg border border-indigo-200 mt-4">
+                          <div>
+                            <div className="text-indigo-900 font-medium">Total</div>
+                            <div className="text-sm text-indigo-700">
+                              Risque d'arrêt machine: {simulationResults[0].stopRiskRate}%
+                            </div>
                           </div>
-                          <div className="bg-white p-3 rounded-md text-center">
-                            <AlertTriangle className="h-5 w-5 mx-auto text-red-600" />
-                            <div className="mt-1 text-sm font-medium">Risque</div>
-                            <div className="text-xl font-bold">{recommendedScenario.risk}%</div>
+                          <div className="text-right">
+                            <div className="font-medium flex items-center justify-end">
+                              <Clock className="h-4 w-4 mr-1 text-blue-600" />
+                              {simulationResults[0].totalTime}h
+                            </div>
+                            <div className="font-medium flex items-center justify-end">
+                              <Coins className="h-4 w-4 mr-1 text-amber-600" />
+                              {simulationResults[0].totalCost}€
+                            </div>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
                   
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Comparaison des Scénarios</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={getComparisonChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis yAxisId="left" orientation="left" stroke="#1A73E8" />
-                          <YAxis yAxisId="right" orientation="right" stroke="#F44336" />
-                          <Tooltip />
-                          <Legend />
-                          <Bar yAxisId="left" dataKey="temps" name="Temps (h)" fill="#1A73E8" />
-                          <Bar yAxisId="left" dataKey="cout" name="Coût (€)" fill="#FFA000" />
-                          <Bar yAxisId="right" dataKey="risque" name="Risque (%)" fill="#F44336" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {/* Scenario Comparison */}
+                  {simulationResults.length > 1 && (
+                    <div className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 space-y-5">
+                      <h3 className="text-lg font-medium text-indigo-900">Comparaison des Scénarios</h3>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <h4 className="font-medium mb-3">Temps de production</h4>
+                          {simulationResults.map((result, index) => (
+                            <div key={index} className="mb-2 last:mb-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm">{result.scenarioName}</span>
+                                <span className="font-medium">{result.totalTime}h</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                  className="bg-blue-600 h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${(result.totalTime / Math.max(...simulationResults.map(r => r.totalTime))) * 100}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <h4 className="font-medium mb-3">Coût total</h4>
+                          {simulationResults.map((result, index) => (
+                            <div key={index} className="mb-2 last:mb-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm">{result.scenarioName}</span>
+                                <span className="font-medium">{result.totalCost}€</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                  className="bg-amber-500 h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${(result.totalCost / Math.max(...simulationResults.map(r => r.totalCost))) * 100}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <h4 className="font-medium mb-3">Risque d'arrêt machine</h4>
+                          {simulationResults.map((result, index) => (
+                            <div key={index} className="mb-2 last:mb-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm">{result.scenarioName}</span>
+                                <span className="font-medium">{result.stopRiskRate}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                  className="bg-red-500 h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${(result.stopRiskRate / Math.max(...simulationResults.map(r => r.stopRiskRate))) * 100}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <Alert className="bg-blue-50 border-blue-200">
+                          <AlertDescription className="text-blue-800">
+                            <span className="font-medium">Conseil de production</span>
+                            <p className="text-sm mt-1">
+                              {simulationResults.length > 1 ? (
+                                <>
+                                  Le scénario {simulationResults.sort((a, b) => a.totalCost - b.totalCost)[0].scenarioName} 
+                                  offre le meilleur rapport coût/production, mais le scénario 
+                                  {simulationResults.sort((a, b) => a.totalTime - b.totalTime)[0].scenarioName} 
+                                  est le plus rapide.
+                                </>
+                              ) : (
+                                `Le scénario ${simulationResults[0].scenarioName} a été simulé.`
+                              )}
+                            </p>
+                          </AlertDescription>
+                        </Alert>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Progression de Production</h3>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={getTimeSeriesData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="hour" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="production" name="Production (%)" stroke="#8B5CF6" activeDot={{ r: 8 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                  {/* Details of Products */}
+                  <div className={`rounded-xl bg-white p-5 shadow-sm border border-gray-100 space-y-5 ${simulationResults.length > 1 ? "xl:col-span-2" : ""}`}>
+                    <h3 className="text-lg font-medium text-indigo-900">Détails des Produits</h3>
                     
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Détails des Produits</h3>
-                      <div className="space-y-3">
-                        {selectedProducts.map((product, index) => (
-                          <div key={index} className="bg-gray-50 p-3 rounded-md">
-                            <div className="flex justify-between">
-                              <div className="font-medium">{product.name}</div>
-                              <div>{product.quantity} kg</div>
-                            </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              Priorité: {product.priority}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </TabsContent>
-          
-          {/* Costs Tab */}
-          <TabsContent value="costs" className="space-y-6">
-            {simulationRun && (
-              <>
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Répartition des Coûts</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={getCostBreakdownData()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="value" name="Coût (€)" fill="#D946EF" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Coût Total par Produit</h3>
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {selectedProducts.map((product, index) => {
-                        const productCost = products.find(p => p.id === product.id)?.cost || 10;
-                        const quantity = product.quantity;
-                        const totalCost = productCost * quantity / 100;
+                        const productInfo = products.find(p => p.id === product.id);
                         
                         return (
-                          <div key={index} className="bg-gray-50 p-3 rounded-md">
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                             <div className="flex justify-between items-center">
-                              <div className="font-medium">{product.name}</div>
-                              <Badge className="bg-purple-100 text-purple-800">
-                                {totalCost.toLocaleString('fr-FR')} €
+                              <div className="font-medium text-gray-900">{product.name}</div>
+                              <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+                                {product.quantity} kg
                               </Badge>
                             </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              {product.quantity} kg × {productCost} €/100kg
+                            
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
+                              <div className="text-sm">
+                                <span className="text-gray-500">Température:</span>{" "}
+                                <span className="text-gray-700">{productInfo?.temp || "-"}°C</span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-500">Coût de base:</span>{" "}
+                                <span className="text-gray-700">{productInfo?.cost || "-"}€ /100kg</span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-500">Temps de base:</span>{" "}
+                                <span className="text-gray-700">{productInfo?.baseTime || "-"}h</span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-500">Priorité:</span>{" "}
+                                <span className="text-gray-700">{product.priority}</span>
+                              </div>
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Analyse des Coûts</h3>
-                    <div className="space-y-3">
-                      {scenarios.map((scenario, index) => (
-                        <div key={index} className={`p-3 rounded-md ${scenario.recommended ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
-                          <div className="flex justify-between items-center">
-                            <div className="font-medium">{scenario.name}</div>
-                            <div className="text-lg font-bold">{scenario.cost} €</div>
-                          </div>
-                          <div className="flex justify-between text-sm text-gray-500 mt-1">
-                            <div>Coût unitaire moyen</div>
-                            <div>
-                              {(scenario.cost / selectedProducts.reduce((sum, p) => sum + p.quantity, 0) * 100).toFixed(2)} €/100kg
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-6">
-                      <Alert className="bg-amber-50 border-amber-200">
-                        <AlertDescription>
-                          <div className="font-medium">Impact des pénuries de matières</div>
-                          <div className="text-sm">
-                            Une pénurie de {materialShortage}% augmente les coûts d'environ {Math.round(materialShortage * 1.2)}%.
-                          </div>
-                        </AlertDescription>
-                      </Alert>
                     </div>
                   </div>
                 </div>
@@ -513,11 +676,15 @@ export default function EnhancedSimulator({ onFinalizeProduction }) {
         <CardFooter className="flex justify-between px-6 pb-6">
           {simulationRun ? (
             <>
-              <Button variant="outline" onClick={resetSimulation}>
+              <Button 
+                variant="outline" 
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                onClick={resetSimulation}
+              >
                 Modifier les Paramètres
               </Button>
               <Button 
-                className="bg-saint-gobain-blue hover:bg-blue-700"
+                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-md"
                 onClick={handleFinalize}
               >
                 Finaliser et Déclarer la Production

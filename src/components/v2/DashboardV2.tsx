@@ -57,13 +57,13 @@ export default function DashboardV2() {
         <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100 rounded-xl">
           <TabsTrigger 
             value="overview" 
-            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-800 data-[state=active]:shadow-sm"
+            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-800 data-[state=active]:shadow-sm"
           >
             <BarChart className="h-4 w-4" /> Aperçu
           </TabsTrigger>
           <TabsTrigger 
             value="simulator" 
-            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-800 data-[state=active]:shadow-sm"
+            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-800 data-[state=active]:shadow-sm"
           >
             <Calculator className="h-4 w-4" /> Simulateur
           </TabsTrigger>
