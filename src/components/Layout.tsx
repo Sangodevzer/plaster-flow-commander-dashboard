@@ -1,6 +1,5 @@
 
 import { ReactNode } from "react";
-import Sidebar from "./Sidebar";
 import Header from "./Header";
 import TutorialOverlay from "./TutorialOverlay";
 
@@ -10,10 +9,9 @@ type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+    <div className="flex flex-col h-screen bg-gray-50">
+      <Header />
       <div className="flex flex-col flex-1 overflow-x-hidden overflow-y-auto">
-        <Header />
         <main className="p-6">
           {children}
         </main>

@@ -2,11 +2,10 @@
 import { useState } from "react";
 import ProductionChart from "./ProductionChart";
 import EnhancedSimulator from "./EnhancedSimulator";
-import Statistics from "./Statistics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { BarChart, Activity, Calculator, Bell } from "lucide-react";
+import { BarChart, Calculator, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardV2() {
@@ -50,15 +49,12 @@ export default function DashboardV2() {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" /> Aperçu
           </TabsTrigger>
           <TabsTrigger value="simulator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" /> Simulateur
-          </TabsTrigger>
-          <TabsTrigger value="statistics" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" /> Statistiques
           </TabsTrigger>
         </TabsList>
         
@@ -69,10 +65,6 @@ export default function DashboardV2() {
           
           <TabsContent value="simulator">
             <EnhancedSimulator onFinalizeProduction={handleProductionDeclaration} />
-          </TabsContent>
-          
-          <TabsContent value="statistics">
-            <Statistics />
           </TabsContent>
         </div>
       </Tabs>
