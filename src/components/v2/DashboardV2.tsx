@@ -34,13 +34,18 @@ export default function DashboardV2() {
     <div className="space-y-6 animate-fade-in">
       {/* Notification Alert */}
       {notifications.some(n => !n.read) && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <Bell className="h-4 w-4 text-amber-500 mr-2" />
+        <Alert className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 rounded-xl shadow-sm">
+          <Bell className="h-5 w-5 text-amber-500 mr-2" />
           <AlertDescription className="flex justify-between items-center">
-            <span>
+            <span className="text-amber-800 font-medium">
               Vous avez {notifications.filter(n => !n.read).length} notifications non lues
             </span>
-            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={markAllAsRead}
+              className="text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+            >
               Tout marquer comme lu
             </Button>
           </AlertDescription>
@@ -49,11 +54,17 @@ export default function DashboardV2() {
       
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100 rounded-xl">
+          <TabsTrigger 
+            value="overview" 
+            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-800 data-[state=active]:shadow-sm"
+          >
             <BarChart className="h-4 w-4" /> Aperçu
           </TabsTrigger>
-          <TabsTrigger value="simulator" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="simulator" 
+            className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-800 data-[state=active]:shadow-sm"
+          >
             <Calculator className="h-4 w-4" /> Simulateur
           </TabsTrigger>
         </TabsList>
